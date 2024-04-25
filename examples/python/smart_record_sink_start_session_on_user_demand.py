@@ -47,17 +47,14 @@
 import sys
 from dsl import *
 
-# RTSP Source URI for AMCREST Camera    
-amcrest_rtsp_uri = 'rtsp://username:password@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0'    
-
-# RTSP Source URI for HIKVISION Camera    
-hikvision_rtsp_uri = 'rtsp://username:password@192.168.1.64:554/Streaming/Channels/101'    
+# RTSP Source URI for Camera    
+hikvision_rtsp_uri = 'rtsp://192.168.100.13:8554/mystream'
 
 # Filespecs (Jetson and dGPU) for the Primary GIE
 primary_infer_config_file = \
     '/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_infer_primary.txt'
 primary_model_engine_file = \
-    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet18_trafficcamnet.etlt_b8_gpu0_int8.engine'
+    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet10.caffemodel_b8_gpu0_int8.engine'
     
 # Filespec for the IOU Tracker config file
 iou_tracker_config_file = \
@@ -80,7 +77,7 @@ def xwindow_key_event_handler(key_string, client_data):
     print('key released = ', key_string)
     if key_string.upper() == 'S':
         retval = dsl_sink_record_session_start(
-            'record-sink', 20, 20, None)
+            'record-sink', 5, 5, None)
     if key_string.upper() == 'P':
         dsl_pipeline_pause('pipeline')
     elif key_string.upper() == 'R':

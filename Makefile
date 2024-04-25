@@ -155,7 +155,7 @@ CFLAGS+= -I$(INC_INSTALL_DIR) \
 	-DNVDS_AZURE_EDGE_PROTO_LIB='L"$(LIB_INSTALL_DIR)/libnvds_azure_edge_proto"' \
 	-DNVDS_KAFKA_PROTO_LIB='L"$(LIB_INSTALL_DIR)/libnvds_kafka_proto.so"' \
 	-DNVDS_REDIS_PROTO_LIB='L"$(LIB_INSTALL_DIR)/libnvds_redis_proto.so"' \
-    -fPIC 
+    -fPIC -DCMAKE_CXX_STANDARD_LIBRARIES="-lX11 -ldl"
 
 ifeq ($(BUILD_WITH_FFMPEG),true)
 CFLAGS+= -I./src/ffmpeg \
@@ -203,7 +203,7 @@ LIBS+= -L$(LIB_INSTALL_DIR) \
 	-lgstreamer-$(GSTREAMER_VERSION) \
 	-Lgstreamer-video-$(GSTREAMER_VERSION) \
 	-Lgstreamer-rtsp-server-$(GSTREAMER_VERSION) \
-	-lgstapp-1.0 \
+	-lgstapp-1.0 -lXi -ldl \
 	-L/usr/local/cuda/lib64/ -lcudart \
 	-Wl,-rpath,$(LIB_INSTALL_DIR)
 

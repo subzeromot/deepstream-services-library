@@ -64,16 +64,16 @@ import time
 from dsl import *    
 
 # RTSP Source URI's  
-src_url_1 = 'rtsp://user:pwd@192.168.1.64:554/Streaming/Channels/101'    
-src_url_2 = 'rtsp://user:pwd@192.168.1.65:554/Streaming/Channels/101'    
-src_url_3 = 'rtsp://user:pwd@192.168.1.66:554/Streaming/Channels/101'    
-src_url_4 = 'rtsp://user:pwd@192.168.1.67:554/Streaming/Channels/101'    
+src_url_1 = 'rtsp://192.168.100.13:8554/mystream'    
+src_url_2 = 'rtsp://192.168.100.13:8554/mystream'    
+src_url_3 = 'rtsp://192.168.100.13:8554/mystream'    
+src_url_4 = 'rtsp://192.168.100.13:8554/mystream'    
 
 # Filespecs (Jetson and dGPU) for the Primary GIE
 primary_infer_config_file = \
     '/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_infer_primary.txt'
 primary_model_engine_file = \
-    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet18_trafficcamnet.etlt_b8_gpu0_int8.engine'
+    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet10.caffemodel_b8_gpu0_int8.engine'
 
 # Filespec for the IOU Tracker config file
 iou_tracker_config_file = \
@@ -388,7 +388,7 @@ def main(args):
             break
 
         # New Window Sink, 0 x/y offsets and dimensions.
-        retval = dsl_sink_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+        retval = dsl_sink_window_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
         if retval != DSL_RETURN_SUCCESS:
             break
 

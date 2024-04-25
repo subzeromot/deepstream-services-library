@@ -35,7 +35,7 @@ uri_h265 = "/opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h265.
 primary_infer_config_file = \
     '/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_infer_primary.txt'
 primary_model_engine_file = \
-    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet18_trafficcamnet.etlt_b8_gpu0_int8.engine'
+    '/opt/nvidia/deepstream/deepstream/samples/models/Primary_Detector/resnet10.caffemodel_b8_gpu0_int8.engine'
 
 
 # Filespec for the IOU Tracker config file
@@ -46,12 +46,12 @@ iou_tracker_config_file = \
 sgie1_config_file = \
     '/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_infer_secondary_vehiclemake.txt'
 sgie1_model_file = \
-    '/opt/nvidia/deepstream/deepstream/samples/models/Secondary_VehicleMake/resnet18_vehiclemakenet.etlt_b8_gpu0_int8.engine'
+    '/opt/nvidia/deepstream/deepstream/samples/models/Secondary_CarMake/resnet18.caffemodel_b16_gpu0_int8.engine'
 
 sgie2_config_file = \
     '/opt/nvidia/deepstream/deepstream/samples/configs/deepstream-app/config_infer_secondary_vehicletypes.txt'
 sgie2_model_file = \
-    '/opt/nvidia/deepstream/deepstream/samples/models/Secondary_VehicleTypes/resnet18_vehicletypenet.etlt_b8_gpu0_int8.engine'
+    '/opt/nvidia/deepstream/deepstream/samples/models/Secondary_VehicleTypes/resnet18.caffemodel_b16_gpu0_int8.engine'
 
 # Tiler Output Dimensions
 TILER_WIDTH = 1920
@@ -116,15 +116,15 @@ def main(args):
         if retval != DSL_RETURN_SUCCESS:
             break
 
-        # New Secondary GIEs using the filespecs above with interval = 0
-        retval = dsl_infer_gie_secondary_new('vehiclemake-sgie', 
-            sgie1_config_file, sgie1_model_file, 'pgie', 0)
-        if retval != DSL_RETURN_SUCCESS:
-            break
-        retval = dsl_infer_gie_secondary_new('vehicletype-sgie', 
-            sgie2_config_file, sgie2_model_file, 'pgie', 0)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # New Secondary GIEs using the filespecs above with interval = 0
+        # retval = dsl_infer_gie_secondary_new('vehiclemake-sgie', 
+        #     sgie1_config_file, sgie1_model_file, 'pgie', 0)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+        # retval = dsl_infer_gie_secondary_new('vehicletype-sgie', 
+        #     sgie2_config_file, sgie2_model_file, 'pgie', 0)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
         # New IOU Tracker, setting operational width and hieght
         retval = dsl_tracker_new('iou-tracker', iou_tracker_config_file, 480, 272)
@@ -181,7 +181,6 @@ def main(args):
         # Add all the components to our pipeline
         retval = dsl_pipeline_new_component_add_many('pipeline', 
             ['uri-h264', 'uri-h265', 'pgie', 'iou-tracker', 
-            'vehiclemake-sgie', 'vehicletype-sgie', 
             'tiler', 'on-screen-display', 'window-sink', None])
         if retval != DSL_RETURN_SUCCESS:
             break
