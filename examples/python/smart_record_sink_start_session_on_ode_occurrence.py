@@ -54,6 +54,7 @@
 #!/usr/bin/env python
 
 import sys
+import pyds
 from dsl import *
 
 # RTSP Source URI for Camera    
@@ -172,6 +173,46 @@ def record_complete_listener(session_info_ptr, client_data):
             print('Failed to reset instance trigger with error:', 
                 dsl_return_value_to_string(retval))
 
+
+def custom_pad_probe_handler(buffer, user_data):
+    frame_number=0
+    num_rects=0
+
+    # Retrieve batch metadata from the gst_buffer
+    batch_meta = pyds.gst_buffer_get_nvds_batch_meta(buffer)
+    l_frame = batch_meta.frame_meta_list
+    while l_frame is not None:
+        try:
+            frame_meta = pyds.glist_get_nvds_frame_meta(l_frame.data)
+        except StopIteration:
+            break
+
+        frame_number=frame_meta.frame_num
+        num_rects = frame_meta.num_obj_meta
+        l_obj=frame_meta.obj_meta_list
+        obj_counters = 0
+        while l_obj is not None:
+            try:
+                # Casting l_obj.data to pyds.NvDsObjectMeta
+                obj_meta=pyds.glist_get_nvds_object_meta(l_obj.data)
+                obj_counters +=1
+            except StopIteration:
+                break
+            try: 
+                l_obj=l_obj.next
+            except StopIteration:
+                break
+
+            print(obj_meta.class_id)
+        print(f"Frame Number={frame_number} Number of Objects={obj_counters}")
+        
+        try:
+            l_frame=l_frame.next
+        except StopIteration:
+            break
+    return DSL_PAD_PROBE_OK
+
+
 def main(args):
 
     # Since we're not using args, we can Let DSL initialize GST on first call
@@ -199,6 +240,7 @@ def main(args):
             font='impact', size=20, color='full-white')
         if retval != DSL_RETURN_SUCCESS:
             break
+        print('----1')
 
         # ````````````````````````````````````````````````````````````````````````````
 
@@ -216,6 +258,9 @@ def main(args):
             color='full-red', has_bg_color=True, bg_color='full-red')
         if retval != DSL_RETURN_SUCCESS:
             break
+
+
+        print('----2')
             
         # Create a new Action to display the "recording in-progress" text
         retval = dsl_ode_action_display_meta_add_many_new('add-rec-on', 
@@ -239,14 +284,17 @@ def main(args):
         retval = dsl_ode_trigger_enabled_set('rec-on-trigger', enabled=False)    
         if (retval != DSL_RETURN_SUCCESS):    
             return retval
+        
+        print('----3')
 
-        # Create a new Capture Action to capture the full-frame to jpeg image, and 
-        # saved to file. The action will be triggered on firt occurrence of a person
-        # and will be saved to the current dir.
-        retval = dsl_ode_action_capture_object_new('person-capture-action', 
-            outdir="./")
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # Create a new Capture Action to capture the full-frame to jpeg image, and 
+        # # saved to file. The action will be triggered on firt occurrence of a person
+        # # and will be saved to the current dir.
+        # retval = dsl_ode_action_capture_object_new('person-capture-action', 
+        #     outdir="./")
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+        # print('----4.1')
         
         # We will also print the event occurrence to the console 
         retval = dsl_ode_action_print_new('print', force_flush=False)
@@ -259,8 +307,8 @@ def main(args):
         # ODE trigger/action, defined below, to start a new session on first 
         # occurrence of a person. The default 'cache-size' and 'duration' are defined in
         # DslApi.h Setting the bit rate to 0 to not change from the default.  
-        retval = dsl_sink_record_new('record-sink', outdir="./", codec=DSL_CODEC_H265, 
-            container=DSL_CONTAINER_MKV, bitrate=0, interval=0, 
+        retval = dsl_sink_record_new('record-sink', outdir="./", codec=DSL_CODEC_H264, 
+            container=DSL_CONTAINER_MP4, bitrate=0, interval=0,
             client_listener=record_complete_listener)
         if retval != DSL_RETURN_SUCCESS:
             break
@@ -285,7 +333,7 @@ def main(args):
         # IMPORTANT! The Record Sink (see above) must be created first or
         # this call will fail with DSL_RESULT_COMPONENT_NAME_NOT_FOUND. 
         retval = dsl_ode_action_sink_record_start_new('start-record-action', 
-            record_sink='record-sink', start=20, duration=20, client_data=None)
+            record_sink='record-sink', start=2, duration=5, client_data=None)
         if retval != DSL_RETURN_SUCCESS:
             break
 
@@ -305,7 +353,6 @@ def main(args):
             
         # Add the actions to our Person Occurence Trigger.
         retval = dsl_ode_trigger_action_add_many('person-occurrence-trigger', actions=[
-            'person-capture-action', 
             'print',
             'start-record-action',
             None])
@@ -344,7 +391,7 @@ def main(args):
             primary_infer_config_file, primary_model_engine_file, 4)
         if retval != DSL_RETURN_SUCCESS:
             break
-
+        
         # New IOU Tracker, setting operational width and hieght
         retval = dsl_tracker_new('iou-tracker', iou_tracker_config_file, 480, 272)
         if retval != DSL_RETURN_SUCCESS:
@@ -363,32 +410,48 @@ def main(args):
         if retval != DSL_RETURN_SUCCESS:
             break
 
-        # New Window Sink, 0 x/y offsets and dimensions.
-        retval = dsl_sink_window_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # New Window Sink, 0 x/y offsets and dimensions.
+        # retval = dsl_sink_window_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
         
-        # Live Source so best to set the Window-Sink's sync enabled setting to false.
-        retval = dsl_sink_sync_enabled_set('egl-sink', False)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # Live Source so best to set the Window-Sink's sync enabled setting to false.
+        # retval = dsl_sink_sync_enabled_set('egl-sink', False)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
-        # Add the XWindow event handler functions defined above to the Window Sink
-        retval = dsl_sink_window_key_event_handler_add('egl-sink', 
-            xwindow_key_event_handler, None)
-        if retval != DSL_RETURN_SUCCESS:
-            break
-        retval = dsl_sink_window_delete_event_handler_add('egl-sink', 
-            xwindow_delete_event_handler, None)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # Add the XWindow event handler functions defined above to the Window Sink
+        # retval = dsl_sink_window_key_event_handler_add('egl-sink', 
+        #     xwindow_key_event_handler, None)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+        # retval = dsl_sink_window_delete_event_handler_add('egl-sink', 
+        #     xwindow_delete_event_handler, None)
+        # if retval != DSL_RETURN_SUCCESS:
+            # break
 
+        retval = dsl_sink_fake_new('egl-sink')
+        if retval != DSL_RETURN_SUCCESS:
+            return False
+        
         # Add all the components to our pipeline
         retval = dsl_pipeline_new_component_add_many('pipeline', 
             ['rtsp-source', 'primary-gie', 'iou-tracker',
             'on-screen-display', 'egl-sink', 'record-sink', None])
         if retval != DSL_RETURN_SUCCESS:
             break
+
+        retval = dsl_pph_custom_new('custom-pph', 
+            client_handler=custom_pad_probe_handler, client_data=None)
+        if retval != DSL_RETURN_SUCCESS:
+            break
+        
+        # Add the custom PPH to the Sink pad (input) of the Tiler
+        retval = dsl_tracker_pph_add('iou-tracker', 
+            handler='custom-pph', pad=DSL_PAD_SINK)
+        if retval != DSL_RETURN_SUCCESS:
+            break
+
             
         ## Add the listener callback functions defined above
         retval = dsl_pipeline_state_change_listener_add('pipeline', 

@@ -28,11 +28,8 @@ import sys
 import time    
 from dsl import *    
 
-# RTSP Source URI for AMCREST Camera    
-amcrest_rtsp_uri = 'rtsp://username:password@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0'    
-
 # RTSP Source URI for HIKVISION Camera    
-hikvision_rtsp_uri = "rtsp://192.168.100.13:8554/mystream"
+hikvision_rtsp_uri = "rtsp://192.168.1.140:8554/mystream"
 
 WINDOW_WIDTH = DSL_1K_HD_WIDTH    
 WINDOW_HEIGHT = DSL_1K_HD_HEIGHT    

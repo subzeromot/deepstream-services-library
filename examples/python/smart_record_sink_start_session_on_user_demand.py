@@ -45,6 +45,7 @@
 #!/usr/bin/env python
 
 import sys
+import pyds
 from dsl import *
 
 # RTSP Source URI for Camera    
@@ -159,6 +160,46 @@ def record_event_listener(session_info_ptr, client_data):
         if (retval != DSL_RETURN_SUCCESS):
             print('Enable always trigger failed with error: ', 
                 dsl_return_value_to_string(retval))
+
+def custom_pad_probe_handler(buffer, user_data):
+    frame_number=0
+    num_rects=0
+
+    # Retrieve batch metadata from the gst_buffer
+    batch_meta = pyds.gst_buffer_get_nvds_batch_meta(buffer)
+    l_frame = batch_meta.frame_meta_list
+    while l_frame is not None:
+        try:
+            frame_meta = pyds.glist_get_nvds_frame_meta(l_frame.data)
+        except StopIteration:
+            break
+
+        frame_number=frame_meta.frame_num
+        num_rects = frame_meta.num_obj_meta
+        l_obj=frame_meta.obj_meta_list
+        obj_counters = 0
+        while l_obj is not None:
+            try:
+                # Casting l_obj.data to pyds.NvDsObjectMeta
+                obj_meta=pyds.glist_get_nvds_object_meta(l_obj.data)
+                obj_counters +=1
+            except StopIteration:
+                break
+            try: 
+                l_obj=l_obj.next
+            except StopIteration:
+                break
+
+            print(obj_meta.class_id)
+        print(f"Frame Number={frame_number} Number of Objects={obj_counters}")
+        
+        try:
+            l_frame=l_frame.next
+        except StopIteration:
+            break
+    return DSL_PAD_PROBE_OK
+
+
 
 def main(args):
 
@@ -279,38 +320,52 @@ def main(args):
             break
 
         # New ODE Handler for our Trigger
-        retval = dsl_pph_ode_new('ode-handler')
-        if retval != DSL_RETURN_SUCCESS:
-            break
-        retval = dsl_pph_ode_trigger_add('ode-handler', 'rec-on-trigger')
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # retval = dsl_pph_ode_new('ode-handler')
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+        # retval = dsl_pph_ode_trigger_add('ode-handler', 'rec-on-trigger')
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
-         # Add our ODE Pad Probe Handler to the Sink pad of the OSD
+        #  # Add our ODE Pad Probe Handler to the Sink pad of the OSD
+        # retval = dsl_osd_pph_add('on-screen-display', 
+        #     handler='ode-handler', pad=DSL_PAD_SINK)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+
+        retval = dsl_sink_fake_new('egl-sink')
+        if retval != DSL_RETURN_SUCCESS:
+            return False
+
+        retval = dsl_pph_custom_new('custom-pph', 
+            client_handler=custom_pad_probe_handler, client_data=None)
+        if retval != DSL_RETURN_SUCCESS:
+            break
+        
         retval = dsl_osd_pph_add('on-screen-display', 
-            handler='ode-handler', pad=DSL_PAD_SINK)
+            handler='custom-pph', pad=DSL_PAD_SINK)
         if retval != DSL_RETURN_SUCCESS:
             break
 
-        # New Window Sink, 0 x/y offsets and dimensions.
-        retval = dsl_sink_window_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # New Window Sink, 0 x/y offsets and dimensions.
+        # retval = dsl_sink_window_egl_new('egl-sink', 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
-        # Live Source so best to set the Window-Sink's sync enabled setting to false.
-        retval = dsl_sink_sync_enabled_set('egl-sink', False)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # Live Source so best to set the Window-Sink's sync enabled setting to false.
+        # retval = dsl_sink_sync_enabled_set('egl-sink', False)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
-        # Add the XWindow event handler functions defined above to the Window Sink
-        retval = dsl_sink_window_key_event_handler_add('egl-sink', 
-            xwindow_key_event_handler, None)
-        if retval != DSL_RETURN_SUCCESS:
-            break
-        retval = dsl_sink_window_delete_event_handler_add('egl-sink', 
-            xwindow_delete_event_handler, None)
-        if retval != DSL_RETURN_SUCCESS:
-            break
+        # # Add the XWindow event handler functions defined above to the Window Sink
+        # retval = dsl_sink_window_key_event_handler_add('egl-sink', 
+        #     xwindow_key_event_handler, None)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
+        # retval = dsl_sink_window_delete_event_handler_add('egl-sink', 
+        #     xwindow_delete_event_handler, None)
+        # if retval != DSL_RETURN_SUCCESS:
+        #     break
 
         # Add all the components to our pipeline - except for our second source and overlay sink 
         retval = dsl_pipeline_new_component_add_many('pipeline', 
